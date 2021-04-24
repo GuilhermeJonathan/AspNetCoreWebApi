@@ -32,10 +32,21 @@ namespace SmartSchool.WebAPI
                 context => context.UseSqlite(Configuration.GetConnectionString("Default"))
             );
 
-            services.AddControllers();
+            //Cria uma instancia e usa ela no projeto inteiro
+            //services.AddSingleton<IRepository, Repository>();
+            //Sempre gera uma nova instancia a cada chamada
+            //services.AddTransient<IRepository, Repository>();
+
+            //compartilha a instancia caso seja chamada em outra dependencia
+            services.AddScoped<IRepository, Repository>();
+
+            services.AddControllers()
+                .AddNewtonsoftJson(o => o.SerializerSettings.ReferenceLoopHandling = 
+                Newtonsoft.Json.ReferenceLoopHandling.Ignore);
+
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "SmartSchool.WebAPI", Version = "v1" });
+                c.SwaggerDoc("v2", new OpenApiInfo { Title = "SmartSchool.WebAPI", Version = "v2" });
             });
         }
 
