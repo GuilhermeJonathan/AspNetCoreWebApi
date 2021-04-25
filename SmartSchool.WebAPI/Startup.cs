@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,25 +45,73 @@ namespace SmartSchool.WebAPI
             //compartilha a instancia caso seja chamada em outra dependencia
             services.AddScoped<IRepository, Repository>();
 
-            services.AddSwaggerGen(c =>
+            //Configuração das versões
+            services.AddVersionedApiExplorer(options =>
             {
-                c.SwaggerDoc("v2", new OpenApiInfo { Title = "SmartSchool.WebAPI", Version = "v2" });
+                options.GroupNameFormat = "'v'VVV";
+                options.SubstituteApiVersionInUrl = true;
+            }).AddApiVersioning(options => {
+                options.AssumeDefaultVersionWhenUnspecified = true;
+                options.DefaultApiVersion = new ApiVersion(1, 0);
+                options.ReportApiVersions = true;
+            });
+
+            var apiProviderDescription = services.BuildServiceProvider().GetService<IApiVersionDescriptionProvider>();
+
+            services.AddSwaggerGen(options =>
+            {
+                foreach (var description in apiProviderDescription.ApiVersionDescriptions)
+                {
+                    options.SwaggerDoc(
+                      description.GroupName,
+                      new OpenApiInfo
+                      {
+                          Title = "SmartSchool.WebAPI",
+                          Version = description.ApiVersion.ToString(),
+                          Description = "Descrição da WebApi do SmartSchool",
+                          Contact = new OpenApiContact
+                          {
+                              Name = "Guilherme Rodrigues",
+                              Email = "guilhermejonathan@hotmail.com",
+                              Url = new Uri("http://2businessconsultoria.com.br")
+                          }
+                      });
+                }
+
+                var xmlComentsFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlComentsFullPath = Path.Combine(AppContext.BaseDirectory, xmlComentsFile);
+
+                options.IncludeXmlComments(xmlComentsFullPath);
             });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IApiVersionDescriptionProvider apiVersionDescriptionProvider)
         {
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
                 app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "SmartSchool.WebAPI v1"));
+                app.UseSwaggerUI(options => 
+                {
+                    foreach (var description in apiVersionDescriptionProvider.ApiVersionDescriptions)
+                    {
+                        options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
+                    }
+                });
             }
 
             //app.UseHttpsRedirection();
 
             app.UseRouting();
+            app.UseSwagger();
+            app.UseSwaggerUI(options =>
+            {
+                foreach (var description in apiVersionDescriptionProvider.ApiVersionDescriptions)
+                {
+                    options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
+                }
+            });
 
             //app.UseAuthorization();
 
