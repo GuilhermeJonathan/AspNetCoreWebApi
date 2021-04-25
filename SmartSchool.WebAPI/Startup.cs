@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -32,17 +33,14 @@ namespace SmartSchool.WebAPI
                 context => context.UseSqlite(Configuration.GetConnectionString("Default"))
             );
 
-            //Cria uma instancia e usa ela no projeto inteiro
-            //services.AddSingleton<IRepository, Repository>();
-            //Sempre gera uma nova instancia a cada chamada
-            //services.AddTransient<IRepository, Repository>();
-
-            //compartilha a instancia caso seja chamada em outra dependencia
-            services.AddScoped<IRepository, Repository>();
-
             services.AddControllers()
                 .AddNewtonsoftJson(o => o.SerializerSettings.ReferenceLoopHandling = 
                 Newtonsoft.Json.ReferenceLoopHandling.Ignore);
+
+            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+            
+            //compartilha a instancia caso seja chamada em outra dependencia
+            services.AddScoped<IRepository, Repository>();
 
             services.AddSwaggerGen(c =>
             {

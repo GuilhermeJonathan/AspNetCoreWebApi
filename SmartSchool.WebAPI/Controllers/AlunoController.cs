@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SmartSchool.WebAPI.Data;
+using SmartSchool.WebAPI.Dtos;
 using SmartSchool.WebAPI.Models;
 
 namespace SmartSchool.WebAPI.Controllers
@@ -12,19 +14,23 @@ namespace SmartSchool.WebAPI.Controllers
     public class AlunoController : ControllerBase
     {
         public readonly IRepository _repo;
+        private readonly IMapper _mapper;
 
-        public AlunoController(IRepository repo)
+        public AlunoController(IRepository repo, IMapper mapper)
         {
+            _mapper = mapper;
             _repo = repo;
         }
 
         public IActionResult Get()
         {
-            var resultado = _repo.GetAllAlunos(true);
+            var alunos = _repo.GetAllAlunos(false);
             
-            if(resultado != null)
-                return Ok(resultado);
-            
+            var retorno = _mapper.Map<IEnumerable<AlunoDto>>(alunos);
+
+            if (retorno != null)
+                return Ok(retorno);
+
             return BadRequest("Alunos não encontrados.");
         }
 
@@ -33,52 +39,60 @@ namespace SmartSchool.WebAPI.Controllers
         {
             var aluno = _repo.GetAllAlunoById(id, false);
 
-            if (aluno == null)
-                return Ok(aluno);
+            var alunoDto = _mapper.Map<AlunoDto>(aluno);
 
-            return BadRequest("Aluno não encontrado.");            
+            if (alunoDto != null)
+                return Ok(alunoDto);
+
+            return BadRequest("Aluno não encontrado.");
         }
 
         [HttpPost]
-        public IActionResult Post(Aluno aluno)
+        public IActionResult Post(AlunoRegistrarDto model)
         {
+            var aluno = _mapper.Map<Aluno>(model);
+
             _repo.Add(aluno);
-            
-            if(_repo.SaveChanges())
-                return Ok(aluno);
-            
+
+            if (_repo.SaveChanges())
+                return Created($"/api/aluno/{model.Id}", _mapper.Map<AlunoDto>(aluno));
+
             return BadRequest("Aluno não cadastrado.");
         }
 
         [HttpPut("{id}")]
-        public IActionResult Put(int id, Aluno aluno)
+        public IActionResult Put(int id, AlunoRegistrarDto model)
         {
             //AsNoTracking permite não bloquear o dado (usuário)
-            var alunoBanco = _repo.GetAllAlunoById(id);
+            var aluno = _repo.GetAllAlunoById(id);
 
-            if (alunoBanco == null)
+            if (aluno == null)
                 return BadRequest("Não encontrou nenhum aluno para ser atualizado.");
 
+            _mapper.Map(model, aluno);
+
             _repo.Update(aluno);
-            
-            if(_repo.SaveChanges())
-                return Ok(aluno);
-            
+
+            if (_repo.SaveChanges())
+                return Created($"/api/aluno/{model.Id}", _mapper.Map<AlunoDto>(aluno));
+
             return BadRequest("Aluno não atualizado.");
         }
 
         [HttpPatch("{id}")]
-        public IActionResult Patch(int id, Aluno aluno)
+        public IActionResult Patch(int id, AlunoRegistrarDto model)
         {
             //PATCH atualiza somente alguns campos
-            var alunoBanco = _repo.GetAllAlunoById(id);
+            var aluno = _repo.GetAllAlunoById(id);
 
-            if (alunoBanco == null)
+            if (aluno == null)
                 return BadRequest("Não encontrou nenhum aluno para ser atualizado.");
 
+            _mapper.Map(model, aluno);
+
             _repo.Update(aluno);
-            
-            if(_repo.SaveChanges())
+
+            if (_repo.SaveChanges())
                 return Ok(aluno);
 
             return BadRequest("Aluno não atualizado.");
@@ -88,14 +102,14 @@ namespace SmartSchool.WebAPI.Controllers
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {
-           var alunoBanco = _repo.GetAllAlunoById(id);
+            var aluno = _repo.GetAllAlunoById(id);
 
-            if (alunoBanco == null)
+            if (aluno == null)
                 return BadRequest("Não encontrou nenhum aluno para ser deletado.");
 
-            _repo.Delete(alunoBanco);
-           
-            if(_repo.SaveChanges())
+            _repo.Delete(aluno);
+
+            if (_repo.SaveChanges())
                 return Ok();
 
             return BadRequest("Aluno não deletado.");
