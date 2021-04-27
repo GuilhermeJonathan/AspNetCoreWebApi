@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using SmartSchool.WebAPI.Data;
 using SmartSchool.WebAPI.v1.Dtos;
 using SmartSchool.WebAPI.Models;
+using System.Threading.Tasks;
+using SmartSchool.WebAPI.Helpers;
 
 namespace SmartSchool.WebAPI.v1.Controllers
 {
@@ -32,17 +34,19 @@ namespace SmartSchool.WebAPI.v1.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        public IActionResult Get()
+        public async Task<IActionResult> Get([FromQuery]PageParams pageParams)
         {
-            var alunos = _repo.GetAllAlunos(false);
-            
+            var alunos = await _repo.GetAllAlunosAsync(pageParams, false);   
             var retorno = _mapper.Map<IEnumerable<AlunoDto>>(alunos);
+            
+            Response.AddPagination(alunos.CurrentPage, alunos.PageSize, alunos.TotalCount, alunos.TotalPages);
 
             if (retorno != null)
                 return Ok(retorno);
 
             return BadRequest("Alunos não encontrados.");
         }
+        
         /// <summary>
         /// Método responsável por realizar busca de um aluno por Id
         /// </summary>

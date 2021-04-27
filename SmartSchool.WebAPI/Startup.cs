@@ -45,7 +45,7 @@ namespace SmartSchool.WebAPI
             //compartilha a instancia caso seja chamada em outra dependencia
             services.AddScoped<IRepository, Repository>();
 
-            //Configuração das versões
+            //ConfiguraÃ§Ã£o das versÃµes
             services.AddVersionedApiExplorer(options =>
             {
                 options.GroupNameFormat = "'v'VVV";
@@ -68,7 +68,7 @@ namespace SmartSchool.WebAPI
                       {
                           Title = "SmartSchool.WebAPI",
                           Version = description.ApiVersion.ToString(),
-                          Description = "Descrição da WebApi do SmartSchool",
+                          Description = "DescriÃ§Ã£o da WebApi do SmartSchool",
                           Contact = new OpenApiContact
                           {
                               Name = "Guilherme Rodrigues",
